@@ -26,6 +26,7 @@ export async function addWidget(widgetBox: WidgetModel): Promise<null> {
     console.log(`addWidget executed successfully`);
     return null;
   } catch (error) {
+    console.error("addWidget Error: ", error);
     throw new Error("addWidget Error:" + (error as any));
   }
 }
@@ -35,9 +36,10 @@ export async function getWidgets(): Promise<WidgetModel[]> {
     const db = await getDB();
     const connections = await db.getAllAsync(`SELECT * FROM widgets;`);
 
-    console.log("getWidgets executed successfully.");
+    console.log("getWidgets executed successfully");
     return connections as WidgetModel[];
   } catch (error) {
+    console.error("getWidgets Error: ", error);
     throw new Error("getWidgets Error:" + (error as any));
   }
 }
@@ -47,9 +49,10 @@ export async function deleteWidget(id: number): Promise<null> {
     const db = await getDB();
     await db.runAsync(`DELETE FROM widgets WHERE id = ${id} ;`);
 
-    console.log("deleteWidget executed successfully.");
+    console.log("deleteWidget executed successfully");
     return null;
   } catch (error) {
+    console.error("deleteWidget Error: ", error);
     throw new Error("deleteWidget Error:" + (error as any));
   }
 }

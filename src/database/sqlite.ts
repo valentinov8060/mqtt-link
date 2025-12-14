@@ -5,6 +5,7 @@ export async function getDB() {
     const db = await SQLite.openDatabaseAsync("mqtt-link");
     return db;
   } catch (error) {
+    console.error("getDB Error: ", error);
     throw new Error("getDB Error:" + (error as any));
   }
 }

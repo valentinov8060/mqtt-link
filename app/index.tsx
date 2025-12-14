@@ -8,10 +8,9 @@ import {
 } from "react-native";
 
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useWidgets } from "@/components/contexts/initialization-context";
-import { ConnectionHeader } from "@/components/headers/connection-header";
+import { useInitialWidgets } from "@/components/contexts/initialization-context";
+import { useMqtt } from "@/components/contexts/mqtt-context";
 import { AddWidgetModal } from "@/components/modals/add-widget-modal";
 import { ErrorModal } from "@/components/modals/error-modal";
 import { ThemedView } from "@/components/themed-view";
@@ -25,19 +24,21 @@ import {
 } from "@/src/database/repositories/widget-repository";
 
 export default function DashboardScreen() {
-  const insets = useSafeAreaInsets();
+  // COLOR THEME
   const colorScheme = useColorScheme() ?? "light";
   const colorTheme = Colors[colorScheme];
 
-  const isConnected = false;
-
-  const widgets: WidgetModel[] = useWidgets();
+  // WIDGET STATES
+  const widgets: WidgetModel[] = useInitialWidgets();
   const [widgetList, setWidgetList] = useState<WidgetModel[]>(widgets);
 
+  // MQTT CONTEXT
+  const { subscribe, unsubscribe, messages, isConnected } = useMqtt();
+
+  // MODAL STATES
   const [modalAddWidgetVisible, setModalAddWidgetVisible] = useState(false);
   const [newNameWidget, setNewNameWidget] = useState("");
   const [newTopicWidget, setNewTopicWidget] = useState("");
-
   const [error, setError] = useState<string | null>(null);
   const [showErrorModal, setShowErrorModal] = useState(false);
 
@@ -65,7 +66,7 @@ export default function DashboardScreen() {
         error instanceof Error ? error.message : String(error);
       setError(errorMessage);
       setShowErrorModal(true);
-      console.error("addWidgetHandler Error:", error);
+      console.error("addWidgetHandler Error: " + (error as any));
     }
   };
 
@@ -73,6 +74,7 @@ export default function DashboardScreen() {
     try {
       if (id !== undefined) {
         await deleteWidget(id);
+        unsubscribe(widgetList.find((w) => w.id === id)?.topic || "");
         const newWidgetList = await getWidgets();
         setWidgetList(newWidgetList);
       }
@@ -90,23 +92,35 @@ export default function DashboardScreen() {
     setWidgetList(widgets);
   }, [widgets]);
 
+  useEffect(() => {
+    if (!isConnected) return;
+
+    widgetList.forEach((w) => {
+      subscribe(w.topic).catch(console.error);
+    });
+
+    return () => {
+      widgetList.forEach((w) => {
+        unsubscribe(w.topic).catch(console.error);
+      });
+    };
+  }, [isConnected, widgetList]);
+
   return (
     <ThemedView
-      style={[
-        styles.container,
-        { paddingTop: insets.top, backgroundColor: colorTheme.background },
-      ]}
+      style={[styles.container, { backgroundColor: colorTheme.background }]}
     >
-      <ConnectionHeader isConnected={isConnected} />
-
       {/* WIDGET LIST */}
       <ScrollView style={{ flex: 1 }}>
-        <View style={{ marginTop: 12, gap: 16 }}>
+        <View style={styles.widgetListContainer}>
           {widgetList?.map((w) => {
             const widgetStyles = {
               backgroundColor: colorTheme.card,
               borderColor: colorTheme.border,
             };
+
+            const message = messages[w.topic];
+            const hasMessage = message !== undefined;
 
             return (
               <View key={w.id} style={[styles.widgetBox, widgetStyles]}>
@@ -131,15 +145,18 @@ export default function DashboardScreen() {
                 <Text
                   style={[
                     styles.widgetSubPayload,
+                    hasMessage
+                      ? styles.widgetSubPayloadActive
+                      : styles.widgetSubPayloadIdle,
                     {
-                      backgroundColor: colorTheme.background,
-                      color: colorTheme.text,
+                      backgroundColor: hasMessage
+                        ? colorTheme.background
+                        : colorTheme.card,
+                      color: hasMessage ? colorTheme.text : colorTheme.icon,
                     },
                   ]}
                 >
-                  {
-                    "lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua"
-                  }
+                  {hasMessage ? message : "Waiting data..."}
                 </Text>
               </View>
             );
@@ -189,6 +206,11 @@ const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 16, paddingBottom: 20 },
 
   /* Widget List */
+  widgetListContainer: {
+    marginTop: 20,
+    width: "100%",
+    gap: 14,
+  },
   widgetBox: {
     borderWidth: 1,
     borderColor: "#ccc",
@@ -207,6 +229,13 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     borderRadius: 5,
     marginTop: 2,
+  },
+  widgetSubPayloadIdle: {
+    fontStyle: "italic",
+    opacity: 0.6,
+  },
+  widgetSubPayloadActive: {
+    fontWeight: "600",
   },
 
   /* Add Widget Button */

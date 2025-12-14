@@ -1,9 +1,9 @@
 export interface ConnectionModel {
   id?: number;
+  protocol: "mqtt" | "mqtts";
   host: string;
   port: number;
-  protocol: "mqtt v3" | "mqtt v5";
-  ssl: boolean;
+  tls: boolean;
   username?: string | null;
   password?: string | null;
   autoReconnect: boolean;

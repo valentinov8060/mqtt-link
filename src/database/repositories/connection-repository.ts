@@ -5,20 +5,20 @@ export async function addConnection(
   connection: ConnectionModel
 ): Promise<null> {
   try {
-    const sslValue = connection.ssl ? 1 : 0;
+    const tlsValue = connection.tls ? 1 : 0;
     const autoReconnectValue = connection.autoReconnect ? 1 : 0;
 
     const sql = `
       INSERT INTO connections 
-        (host, port, protocol, ssl, username, password, autoReconnect)
+        (protocol, host, port, tls, username, password, autoReconnect)
       VALUES 
         (?, ?, ?, ?, ?, ?, ?);
     `;
     const params = [
+      connection.protocol,
       connection.host,
       connection.port,
-      connection.protocol,
-      sslValue,
+      tlsValue,
       connection.username || null,
       connection.password || null,
       autoReconnectValue,
@@ -30,6 +30,7 @@ export async function addConnection(
     console.log(`addConnection executed successfully`);
     return null;
   } catch (error) {
+    console.error("addConnection Error: ", error);
     throw new Error("addConnection Error:" + (error as any));
   }
 }
@@ -45,16 +46,16 @@ export async function getConnections(): Promise<ConnectionModel[]> {
     const connections: ConnectionModel[] = rawConnections.map((rawConn) => {
       return {
         ...rawConn,
-        ssl: !!rawConn.ssl,
+        tls: !!rawConn.tls,
         autoReconnect: !!rawConn.autoReconnect,
       } as ConnectionModel;
     });
 
-    console.log("getConnections executed successfully.");
+    console.log("getConnections executed successfully");
     return connections;
   } catch (error) {
-    console.error("getConnections Error:", error);
-    throw new Error(`getConnections Error: ${error}`);
+    console.error("getConnections Error: ", error);
+    throw new Error("getConnections Error:" + (error as any));
   }
 }
 
@@ -67,25 +68,25 @@ export async function updateConnection(
       throw new Error("updateConnection Error: id is required");
     }
 
-    const sslValue = connection.ssl ? 1 : 0;
+    const tlsValue = connection.tls ? 1 : 0;
     const autoReconnectValue = connection.autoReconnect ? 1 : 0;
     const sql = `
       UPDATE connections 
       SET 
+        protocol = ?,
         host = ?,
         port = ?,
-        protocol = ?,
-        ssl = ?,
+        tls = ?,
         username = ?,
         password = ?,
         autoReconnect = ?
       WHERE id = ?;
     `;
     const params = [
+      connection.protocol,
       connection.host,
       connection.port,
-      connection.protocol,
-      sslValue,
+      tlsValue,
       connection.username || null,
       connection.password || null,
       autoReconnectValue,
@@ -98,6 +99,7 @@ export async function updateConnection(
     console.log(`updateConnection executed successfully`);
     return null;
   } catch (error) {
+    console.error("updateConnection Error: ", error);
     throw new Error("updateConnection Error:" + (error as any));
   }
 }

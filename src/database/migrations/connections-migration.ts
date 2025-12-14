@@ -9,7 +9,7 @@ export async function initConnections() {
         host TEXT NOT NULL,
         port INTEGER NOT NULL,
         protocol TEXT,
-        ssl INTEGER DEFAULT 0,
+        tls INTEGER DEFAULT 0,
         username TEXT,
         password TEXT,
         autoReconnect INTEGER DEFAULT 1,
@@ -27,8 +27,9 @@ export async function initConnections() {
       END;
     `);
 
-    console.log("initConnections executed successfully.");
+    console.log("initConnections executed successfully");
   } catch (error) {
+    console.error("initConnections Error: ", error);
     throw new Error("initConnections Error:" + (error as any));
   }
 }

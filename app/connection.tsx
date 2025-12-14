@@ -9,32 +9,49 @@ import {
   View,
 } from "react-native";
 
-import { useConnection } from "@/components/contexts/initialization-context";
-import { ConnectionHeader } from "@/components/headers/connection-header";
+import { useInitialConnectionConfig } from "@/components/contexts/initialization-context";
+import { useMqtt } from "@/components/contexts/mqtt-context";
 import { ConnectionConfigModal } from "@/components/modals/connection-config-modal";
+import { ErrorModal } from "@/components/modals/error-modal";
 import { ThemedView } from "@/components/themed-view";
 import { Colors } from "@/constants/theme";
 import { ConnectionModel } from "@/src/database/models/connection-model";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function ConnectionScreen() {
-  const insets = useSafeAreaInsets();
+  // COLOR THEME
   const colorScheme = useColorScheme() ?? "light";
   const colorTheme = Colors[colorScheme];
 
-  const isConnected = true;
+  // INITIAL STATES
+  const initialConnectionConfig: ConnectionModel = useInitialConnectionConfig();
+  const [connectionConfig, setConnectionConfig] = useState<ConnectionModel>(
+    initialConnectionConfig
+  );
 
-  const connection: ConnectionModel = useConnection();
-  const [connectionConfig, setConnectionConfig] =
-    useState<ConnectionModel>(connection);
+  // MQTT CONTEXT
+  const { connecting } = useMqtt();
 
+  // MODAL STATES
   const [connectionConfigModalVisible, setConnectionConfigModalVisible] =
     useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+
+  // HANDLER
+  const connectionHandler = async () => {
+    try {
+      await connecting(connectionConfig);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      setError(errorMessage);
+      setShowErrorModal(true);
+      console.error("connectionHandler Error: " + (error as any));
+    }
+  };
 
   return (
-    <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
-      <ConnectionHeader isConnected={isConnected} />
-
+    <ThemedView style={styles.container}>
       <View
         style={[
           styles.connectionCardContainer,
@@ -67,10 +84,7 @@ export default function ConnectionScreen() {
 
         <TouchableOpacity
           style={[styles.connectBtn, { backgroundColor: colorTheme.success }]}
-          onPress={() => {
-            /* TODO: call connect function */
-            console.log("Connect button pressed");
-          }}
+          onPress={connectionHandler}
         >
           <Text style={styles.connectBtnText}>Connect</Text>
         </TouchableOpacity>
@@ -82,6 +96,12 @@ export default function ConnectionScreen() {
           setConnectionConfig={setConnectionConfig}
         />
       </View>
+
+      <ErrorModal
+        visible={showErrorModal}
+        message={error}
+        onClose={() => setShowErrorModal(false)}
+      />
     </ThemedView>
   );
 }
@@ -96,6 +116,9 @@ const styles = StyleSheet.create({
 
   /* Connection Card Container */
   connectionCardContainer: {
+    marginTop: 20,
+    width: "100%",
+    gap: 14,
     borderRadius: 12,
   },
   connectionCard: {

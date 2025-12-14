@@ -1,7 +1,9 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,6 +12,7 @@ import {
   View,
 } from "react-native";
 
+import { useMqtt } from "@/components/contexts/mqtt-context";
 import { ErrorModal } from "@/components/modals/error-modal";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -17,6 +20,7 @@ import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { ConnectionModel } from "@/src/database/models/connection-model";
 import { updateConnection } from "@/src/database/repositories/connection-repository";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface ConnectionConfigModalProps {
   isVisible: boolean;
@@ -31,6 +35,7 @@ export const ConnectionConfigModal: React.FC<ConnectionConfigModalProps> = ({
   connectionConfig,
   setConnectionConfig,
 }) => {
+  const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme() ?? "light";
   const colorTheme = Colors[colorScheme];
   const themedTextInputStyle = {
@@ -43,10 +48,12 @@ export const ConnectionConfigModal: React.FC<ConnectionConfigModalProps> = ({
     fontSize: 16,
   };
 
+  const { connecting } = useMqtt();
+
+  const [protocol, setProtocol] = useState(connectionConfig.protocol);
   const [host, setHost] = useState(connectionConfig.host);
   const [port, setPort] = useState(connectionConfig.port);
-  const [protocol, setProtocol] = useState(connectionConfig.protocol);
-  const [sslEnabled, setSslEnabled] = useState(connectionConfig.ssl);
+  const [tlsEnabled, setTlsEnabled] = useState(connectionConfig.tls);
   const [username, setUsername] = useState(connectionConfig.username || "");
   const [password, setPassword] = useState(connectionConfig.password || "");
   const [autoReconnect, setAutoReconnect] = useState(
@@ -57,14 +64,14 @@ export const ConnectionConfigModal: React.FC<ConnectionConfigModalProps> = ({
   const [showErrorModal, setShowErrorModal] = useState(false);
 
   // HANDLERS
-  const handlerUpdateConnectionConfig = async () => {
+  const updateConnectionConfigHandler = async () => {
     try {
       const updatedData = {
         id: connectionConfig.id,
+        protocol,
         host,
         port,
-        protocol,
-        ssl: sslEnabled,
+        tls: tlsEnabled,
         username,
         password,
         autoReconnect,
@@ -73,6 +80,10 @@ export const ConnectionConfigModal: React.FC<ConnectionConfigModalProps> = ({
       await updateConnection(updatedData);
 
       setConnectionConfig(updatedData);
+      if (autoReconnect) {
+        await connecting(updatedData);
+      }
+
       onClose();
     } catch (error) {
       const errorMessage =
@@ -86,10 +97,10 @@ export const ConnectionConfigModal: React.FC<ConnectionConfigModalProps> = ({
   // USE EFFECT
   useEffect(() => {
     if (isVisible && connectionConfig) {
+      setProtocol(connectionConfig.protocol);
       setHost(connectionConfig.host);
       setPort(connectionConfig.port);
-      setProtocol(connectionConfig.protocol);
-      setSslEnabled(connectionConfig.ssl);
+      setTlsEnabled(connectionConfig.tls);
       setUsername(connectionConfig.username || "");
       setPassword(connectionConfig.password || "");
       setAutoReconnect(connectionConfig.autoReconnect);
@@ -104,7 +115,9 @@ export const ConnectionConfigModal: React.FC<ConnectionConfigModalProps> = ({
         visible={isVisible}
         onRequestClose={onClose}
       >
-        <ThemedView style={styles.fullScreenContainer}>
+        <ThemedView
+          style={[styles.fullScreenContainer, { paddingTop: insets.top }]}
+        >
           <View
             style={[styles.header, { borderBottomColor: colorTheme.border }]}
           >
@@ -117,161 +130,162 @@ export const ConnectionConfigModal: React.FC<ConnectionConfigModalProps> = ({
           </View>
 
           {/* FORM CONTENT */}
-          <ScrollView contentContainerStyle={styles.scrollContent}>
-            {/* HOST / IP */}
-            <View style={styles.inputGroup}>
-              <ThemedText style={styles.label}>Host / IP</ThemedText>
-              <TextInput
-                style={themedTextInputStyle}
-                value={host}
-                onChangeText={setHost}
-                placeholder="e.g., test.mosquitto.org"
-                placeholderTextColor={colorTheme.tabIconDefault}
-              />
-            </View>
-
-            {/* PORT */}
-            <View style={styles.inputGroup}>
-              <ThemedText style={styles.label}>Port</ThemedText>
-              <TextInput
-                style={themedTextInputStyle}
-                value={port.toString()}
-                onChangeText={(text: string) => {
-                  const numeric = text.replaceAll(/\D/g, "");
-                  setPort(numeric ? Number(numeric) : 0);
-                }}
-                placeholder="e.g., 1883"
-                keyboardType="number-pad"
-                maxLength={5}
-                placeholderTextColor={colorTheme.tabIconDefault}
-                inputMode="numeric"
-              />
-            </View>
-
-            {/* PROTOCOL */}
-            <View style={styles.inputGroup}>
-              <ThemedText style={styles.label}>Protocol</ThemedText>
-              <View style={styles.radioGroup}>
-                {/* MQTT V3 */}
-                <Pressable
-                  style={[
-                    styles.radio,
-                    protocol === "mqtt v3" && {
-                      backgroundColor: colorTheme.tint + "20",
-                    },
-                    { borderColor: colorTheme.border },
-                  ]}
-                  onPress={() => setProtocol("mqtt v3")}
-                >
-                  <ThemedText
-                    style={{
-                      color:
-                        protocol === "mqtt v3"
-                          ? colorTheme.tint
-                          : colorTheme.text,
-                    }}
-                  >
-                    MQTT V3
-                  </ThemedText>
-                </Pressable>
-                {/* MQTT V5 */}
-                <Pressable
-                  style={[
-                    styles.radio,
-                    protocol === "mqtt v5" && {
-                      backgroundColor: colorTheme.tint + "20",
-                    },
-                    { borderColor: colorTheme.border, marginLeft: 10 },
-                  ]}
-                  onPress={() => setProtocol("mqtt v5")}
-                >
-                  <ThemedText
-                    style={{
-                      color:
-                        protocol === "mqtt v5"
-                          ? colorTheme.tint
-                          : colorTheme.text,
-                    }}
-                  >
-                    MQTT V5
-                  </ThemedText>
-                </Pressable>
-              </View>
-            </View>
-
-            {/* SSL (TOGGLE) */}
-            <View style={styles.toggleRow}>
-              <ThemedText style={styles.label}>SSL / TLS</ThemedText>
-              <Switch
-                trackColor={{
-                  false: colorTheme.tabIconDefault,
-                  true: colorTheme.tabIconSelected,
-                }}
-                thumbColor={colorTheme.tint}
-                onValueChange={setSslEnabled}
-                value={sslEnabled}
-              />
-            </View>
-
-            {/* USERNAME */}
-            <View style={styles.inputGroup}>
-              <ThemedText style={styles.label}>Username (Optional)</ThemedText>
-              <TextInput
-                style={themedTextInputStyle}
-                value={username}
-                onChangeText={setUsername}
-                placeholder="e.g., myuser"
-                placeholderTextColor={colorTheme.tabIconDefault}
-              />
-            </View>
-
-            {/* PASSWORD */}
-            <View style={styles.inputGroup}>
-              <ThemedText style={styles.label}>Password (Optional)</ThemedText>
-              <TextInput
-                style={themedTextInputStyle}
-                value={password}
-                onChangeText={setPassword}
-                placeholder="••••••••"
-                secureTextEntry
-                placeholderTextColor={colorTheme.tabIconDefault}
-              />
-            </View>
-
-            {/* AUTO RECONNECT (TOGGLE) */}
-            <View style={styles.toggleRow}>
-              <ThemedText style={styles.label}>Auto Reconnect</ThemedText>
-              <Switch
-                trackColor={{
-                  false: colorTheme.tabIconDefault,
-                  true: colorTheme.tabIconSelected,
-                }}
-                thumbColor={colorTheme.tint}
-                onValueChange={setAutoReconnect}
-                value={autoReconnect}
-              />
-            </View>
-
-            <View style={{ height: 100 }} />
-          </ScrollView>
-
-          {/* SAVE BUTTON */}
-          <View
-            style={[
-              styles.footer,
-              {
-                borderTopColor: colorTheme.border,
-                backgroundColor: colorTheme.card,
-              },
-            ]}
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
           >
-            <Pressable
-              style={[styles.saveButton, { backgroundColor: colorTheme.tint }]}
-              onPress={handlerUpdateConnectionConfig}
-            >
-              <ThemedText style={styles.saveButtonText}>Save</ThemedText>
-            </Pressable>
-          </View>
+            <ScrollView contentContainerStyle={styles.scrollContent}>
+              {/* PROTOCOL */}
+              <View style={styles.inputGroup}>
+                <ThemedText style={styles.label}>Protocol</ThemedText>
+                <View style={styles.radioGroup}>
+                  {/* MQTT V3 */}
+                  <Pressable
+                    style={[
+                      styles.radio,
+                      protocol === "mqtt" && {
+                        backgroundColor: colorTheme.tint + "20",
+                      },
+                      { borderColor: colorTheme.border },
+                    ]}
+                    onPress={() => setProtocol("mqtts")}
+                  >
+                    <ThemedText
+                      style={{
+                        color:
+                          protocol === "mqtt"
+                            ? colorTheme.tint
+                            : colorTheme.text,
+                      }}
+                    >
+                      MQTT
+                    </ThemedText>
+                  </Pressable>
+                  {/* MQTT V5 */}
+                  <Pressable
+                    style={[
+                      styles.radio,
+                      protocol === "mqtts" && {
+                        backgroundColor: colorTheme.tint + "20",
+                      },
+                      { borderColor: colorTheme.border, marginLeft: 10 },
+                    ]}
+                    onPress={() => setProtocol("mqtts")}
+                  >
+                    <ThemedText
+                      style={{
+                        color:
+                          protocol === "mqtts"
+                            ? colorTheme.tint
+                            : colorTheme.text,
+                      }}
+                    >
+                      MQTTs
+                    </ThemedText>
+                  </Pressable>
+                </View>
+              </View>
+
+              {/* HOST / IP */}
+              <View style={styles.inputGroup}>
+                <ThemedText style={styles.label}>Host</ThemedText>
+                <TextInput
+                  style={themedTextInputStyle}
+                  value={host}
+                  onChangeText={setHost}
+                  placeholder="e.g., test.mosquitto.org"
+                  placeholderTextColor={colorTheme.tabIconDefault}
+                />
+              </View>
+
+              {/* PORT */}
+              <View style={styles.inputGroup}>
+                <ThemedText style={styles.label}>Port</ThemedText>
+                <TextInput
+                  style={themedTextInputStyle}
+                  value={port.toString()}
+                  onChangeText={(text: string) => {
+                    const numeric = text.replaceAll(/\D/g, "");
+                    setPort(numeric ? Number(numeric) : 0);
+                  }}
+                  placeholder="e.g., 1883"
+                  keyboardType="number-pad"
+                  maxLength={5}
+                  placeholderTextColor={colorTheme.tabIconDefault}
+                  inputMode="numeric"
+                />
+              </View>
+
+              {/* SSL (TOGGLE) */}
+              <View style={styles.toggleRow}>
+                <ThemedText style={styles.label}>TLS</ThemedText>
+                <Switch
+                  trackColor={{
+                    false: colorTheme.tabIconDefault,
+                    true: colorTheme.tabIconSelected,
+                  }}
+                  thumbColor={colorTheme.tint}
+                  onValueChange={setTlsEnabled}
+                  value={tlsEnabled}
+                />
+              </View>
+
+              {/* USERNAME */}
+              <View style={styles.inputGroup}>
+                <ThemedText style={styles.label}>
+                  Username (Optional)
+                </ThemedText>
+                <TextInput
+                  style={themedTextInputStyle}
+                  value={username}
+                  onChangeText={setUsername}
+                  placeholder="e.g., myuser"
+                  placeholderTextColor={colorTheme.tabIconDefault}
+                />
+              </View>
+
+              {/* PASSWORD */}
+              <View style={styles.inputGroup}>
+                <ThemedText style={styles.label}>
+                  Password (Optional)
+                </ThemedText>
+                <TextInput
+                  style={themedTextInputStyle}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="••••••••"
+                  secureTextEntry
+                  placeholderTextColor={colorTheme.tabIconDefault}
+                />
+              </View>
+
+              {/* AUTO RECONNECT (TOGGLE) */}
+              <View style={styles.toggleRow}>
+                <ThemedText style={styles.label}>Auto Reconnect</ThemedText>
+                <Switch
+                  trackColor={{
+                    false: colorTheme.tabIconDefault,
+                    true: colorTheme.tabIconSelected,
+                  }}
+                  thumbColor={colorTheme.tint}
+                  onValueChange={setAutoReconnect}
+                  value={autoReconnect}
+                />
+              </View>
+
+              {/* SAVE BUTTON */}
+              <Pressable
+                style={[
+                  styles.saveButton,
+                  { backgroundColor: colorTheme.tint },
+                ]}
+                onPress={updateConnectionConfigHandler}
+              >
+                <ThemedText style={styles.saveButtonText}>Save</ThemedText>
+              </Pressable>
+            </ScrollView>
+          </KeyboardAvoidingView>
         </ThemedView>
       </Modal>
 
@@ -332,14 +346,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-  },
-  footer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 15,
-    borderTopWidth: StyleSheet.hairlineWidth,
   },
   saveButton: {
     paddingVertical: 15,

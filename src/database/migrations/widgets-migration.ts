@@ -22,8 +22,9 @@ export async function initWidgets() {
       END;
     `);
 
-    console.log("initWidgets executed successfully.");
+    console.log("initWidgets executed successfully");
   } catch (error) {
+    console.error("initWidgets Error: ", error);
     throw new Error("initWidgets Error:" + (error as any));
   }
 }

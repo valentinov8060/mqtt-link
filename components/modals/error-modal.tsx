@@ -11,6 +11,7 @@ interface ErrorModalProps {
 }
 
 export function ErrorModal({ visible, message, onClose }: ErrorModalProps) {
+  // COLOR THEME
   const colorScheme = useColorScheme() ?? "light";
   const colorTheme = Colors[colorScheme];
 

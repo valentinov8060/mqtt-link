@@ -7,45 +7,48 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { ConnectionHeader } from "@/components/headers/connection-header";
 import { ErrorModal } from "@/components/modals/error-modal";
 import { ThemedView } from "@/components/themed-view";
 import { Colors } from "@/constants/theme";
 
+import { useMqtt } from "@/components/contexts/mqtt-context";
+
 export default function PublishScreen() {
-  const insets = useSafeAreaInsets();
+  // COLOR THEME
   const colorScheme = useColorScheme() ?? "light";
   const colorTheme = Colors[colorScheme];
 
-  const isConnected = true;
+  // MQTT CONTEXT
+  const { isConnected, publish } = useMqtt();
 
+  // STATES
   const [topic, setTopic] = useState("");
   const [payload, setPayload] = useState("");
 
+  // MODAL STATES
   const [error, setError] = useState<string | null>(null);
   const [showErrorModal, setShowErrorModal] = useState(false);
 
   // HANDLERS
-  const publishHandler = () => {
+  const publishHandler = async () => {
     try {
-      console.log("Publishing:", { topic, payload });
-      // TODO: call publish MQTT function here
+      if (!isConnected) {
+        throw new Error("MQTT is not connected.");
+      }
+      await publish(topic, payload);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       setError(errorMessage);
       setShowErrorModal(true);
-      console.error("handlePublish Error:", error);
+      console.error("handlePublish Error: ", error);
     }
   };
 
   return (
-    <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
-      <ConnectionHeader isConnected={isConnected} />
-
-      <View style={{ marginTop: 20, width: "100%", gap: 14 }}>
+    <ThemedView style={styles.container}>
+      <View style={styles.publishInputContainer}>
         <TextInput
           placeholder="Topic MQTT (ex: sensor/temp)"
           placeholderTextColor={colorTheme.icon}
@@ -93,6 +96,11 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     paddingHorizontal: 16,
     paddingBottom: 20,
+  },
+  publishInputContainer: {
+    marginTop: 20,
+    width: "100%",
+    gap: 14,
   },
   input: {
     width: "100%",

@@ -29,6 +29,7 @@ export function AddWidgetModal({
   onSubmit,
   onCancel,
 }: AddWidgetModalProps) {
+  // COLOR THEME
   const colorScheme = useColorScheme() ?? "light";
   const colorTheme = Colors[colorScheme];
 
