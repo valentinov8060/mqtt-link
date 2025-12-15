@@ -9,7 +9,6 @@ import {
 
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 
-import { useInitialWidgets } from "@/components/contexts/initialization-context";
 import { useMqtt } from "@/components/contexts/mqtt-context";
 import { AddWidgetModal } from "@/components/modals/add-widget-modal";
 import { ErrorModal } from "@/components/modals/error-modal";
@@ -29,8 +28,7 @@ export default function DashboardScreen() {
   const colorTheme = Colors[colorScheme];
 
   // WIDGET STATES
-  const widgets: WidgetModel[] = useInitialWidgets();
-  const [widgetList, setWidgetList] = useState<WidgetModel[]>(widgets);
+  const [widgets, setWidgets] = useState<WidgetModel[]>([]);
 
   // MQTT CONTEXT
   const { subscribe, unsubscribe, messages, isConnected } = useMqtt();
@@ -42,6 +40,29 @@ export default function DashboardScreen() {
   const [error, setError] = useState<string | null>(null);
   const [showErrorModal, setShowErrorModal] = useState(false);
 
+  // USE EFFECT
+  useEffect(() => {
+    const fetchWidgets = async () => {
+      const initialWidgets = await getWidgets();
+      setWidgets(initialWidgets);
+    };
+    fetchWidgets();
+  }, []);
+
+  useEffect(() => {
+    if (!isConnected) return;
+
+    widgets.forEach((w) => {
+      subscribe(w.topic).catch(console.error);
+    });
+
+    return () => {
+      widgets.forEach((w) => {
+        unsubscribe(w.topic).catch(console.error);
+      });
+    };
+  }, [isConnected, widgets]);
+
   // HANDLERS
   const addWidgetHandler = async () => {
     try {
@@ -49,14 +70,14 @@ export default function DashboardScreen() {
         throw new Error("Widget name and topic are required.");
       }
 
-      if (widgetList.length >= 5) {
+      if (widgets.length >= 5) {
         throw new Error("Maximum 5 widgets allowed.");
       }
 
       await addWidget({ name: newNameWidget, topic: newTopicWidget });
 
-      const newWidgetList = await getWidgets();
-      setWidgetList(newWidgetList);
+      const newWidgets = await getWidgets();
+      setWidgets(newWidgets);
 
       setNewNameWidget("");
       setNewTopicWidget("");
@@ -74,9 +95,10 @@ export default function DashboardScreen() {
     try {
       if (id !== undefined) {
         await deleteWidget(id);
-        unsubscribe(widgetList.find((w) => w.id === id)?.topic || "");
-        const newWidgetList = await getWidgets();
-        setWidgetList(newWidgetList);
+        unsubscribe(widgets.find((w) => w.id === id)?.topic || "");
+
+        const newWidgets = await getWidgets();
+        setWidgets(newWidgets);
       }
     } catch (error) {
       const errorMessage =
@@ -87,33 +109,14 @@ export default function DashboardScreen() {
     }
   };
 
-  // USE EFFECT
-  useEffect(() => {
-    setWidgetList(widgets);
-  }, [widgets]);
-
-  useEffect(() => {
-    if (!isConnected) return;
-
-    widgetList.forEach((w) => {
-      subscribe(w.topic).catch(console.error);
-    });
-
-    return () => {
-      widgetList.forEach((w) => {
-        unsubscribe(w.topic).catch(console.error);
-      });
-    };
-  }, [isConnected, widgetList]);
-
   return (
     <ThemedView
       style={[styles.container, { backgroundColor: colorTheme.background }]}
     >
       {/* WIDGET LIST */}
       <ScrollView style={{ flex: 1 }}>
-        <View style={styles.widgetListContainer}>
-          {widgetList?.map((w) => {
+        <View style={styles.widgetsContainer}>
+          {widgets?.map((w) => {
             const widgetStyles = {
               backgroundColor: colorTheme.card,
               borderColor: colorTheme.border,
@@ -163,7 +166,7 @@ export default function DashboardScreen() {
           })}
 
           {/* ADD WIDGET BUTTON — hidden when full */}
-          {widgetList.length < 5 && (
+          {widgets.length < 5 && (
             <TouchableOpacity
               style={[
                 styles.addWidgetButton,
@@ -205,8 +208,8 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 16, paddingBottom: 20 },
 
-  /* Widget List */
-  widgetListContainer: {
+  /* Widgets */
+  widgetsContainer: {
     marginTop: 20,
     width: "100%",
     gap: 14,

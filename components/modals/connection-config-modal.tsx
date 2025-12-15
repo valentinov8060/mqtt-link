@@ -139,8 +139,9 @@ export const ConnectionConfigModal: React.FC<ConnectionConfigModalProps> = ({
               {/* PROTOCOL */}
               <View style={styles.inputGroup}>
                 <ThemedText style={styles.label}>Protocol</ThemedText>
+
                 <View style={styles.radioGroup}>
-                  {/* MQTT V3 */}
+                  {/* MQTT */}
                   <Pressable
                     style={[
                       styles.radio,
@@ -149,7 +150,7 @@ export const ConnectionConfigModal: React.FC<ConnectionConfigModalProps> = ({
                       },
                       { borderColor: colorTheme.border },
                     ]}
-                    onPress={() => setProtocol("mqtts")}
+                    onPress={() => setProtocol("mqtt")}
                   >
                     <ThemedText
                       style={{
@@ -162,7 +163,8 @@ export const ConnectionConfigModal: React.FC<ConnectionConfigModalProps> = ({
                       MQTT
                     </ThemedText>
                   </Pressable>
-                  {/* MQTT V5 */}
+
+                  {/* MQTTs */}
                   <Pressable
                     style={[
                       styles.radio,

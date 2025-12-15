@@ -11,8 +11,10 @@ import { ConnectionHeader } from "@/components/headers/connection-header";
 import { Colors } from "@/constants/theme";
 
 export default function RootLayout() {
+  // COLOR THEME
   const colorScheme = useColorScheme() ?? "light";
   const colorTheme = Colors[colorScheme];
+
   return (
     <MqttProvider>
       <InitializationProvider>

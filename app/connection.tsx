@@ -1,5 +1,5 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -9,13 +9,14 @@ import {
   View,
 } from "react-native";
 
-import { useInitialConnectionConfig } from "@/components/contexts/initialization-context";
+import { DEFAULT_CONNECTION_CONFIG } from "@/components/contexts/initialization-context";
 import { useMqtt } from "@/components/contexts/mqtt-context";
 import { ConnectionConfigModal } from "@/components/modals/connection-config-modal";
 import { ErrorModal } from "@/components/modals/error-modal";
 import { ThemedView } from "@/components/themed-view";
 import { Colors } from "@/constants/theme";
 import { ConnectionModel } from "@/src/database/models/connection-model";
+import { getConnections } from "@/src/database/repositories/connection-repository";
 
 export default function ConnectionScreen() {
   // COLOR THEME
@@ -23,9 +24,8 @@ export default function ConnectionScreen() {
   const colorTheme = Colors[colorScheme];
 
   // INITIAL STATES
-  const initialConnectionConfig: ConnectionModel = useInitialConnectionConfig();
   const [connectionConfig, setConnectionConfig] = useState<ConnectionModel>(
-    initialConnectionConfig
+    DEFAULT_CONNECTION_CONFIG
   );
 
   // MQTT CONTEXT
@@ -37,10 +37,19 @@ export default function ConnectionScreen() {
   const [error, setError] = useState<string | null>(null);
   const [showErrorModal, setShowErrorModal] = useState(false);
 
+  // USE EFFECT
+  useEffect(() => {
+    const fetchConnectionConfig = async () => {
+      const initialConnectionConfig = await getConnections();
+      setConnectionConfig(initialConnectionConfig[0]);
+    };
+    fetchConnectionConfig();
+  }, []);
+
   // HANDLER
   const connectionHandler = async () => {
     try {
-      await connecting(connectionConfig);
+      await connecting(connectionConfig!);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);

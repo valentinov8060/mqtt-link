@@ -25,6 +25,7 @@ export default function PublishScreen() {
   // STATES
   const [topic, setTopic] = useState("");
   const [payload, setPayload] = useState("");
+  const [qos, setQos] = useState(0);
 
   // MODAL STATES
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +37,7 @@ export default function PublishScreen() {
       if (!isConnected) {
         throw new Error("MQTT is not connected.");
       }
-      await publish(topic, payload);
+      await publish(topic, payload, qos);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -72,6 +73,38 @@ export default function PublishScreen() {
           value={payload}
           onChangeText={setPayload}
         />
+
+        <View style={styles.qosInputContainer}>
+          <Text style={[styles.qosInputLabel, { color: colorTheme.text }]}>
+            QoS Level
+          </Text>
+
+          <View style={styles.qosInputOptions}>
+            {[0, 1, 2].map((level) => (
+              <TouchableOpacity
+                key={level}
+                onPress={() => setQos(level)}
+                style={[
+                  styles.qosInputOption,
+                  {
+                    borderColor: colorTheme.border,
+                    backgroundColor:
+                      qos === level ? colorTheme.tint + "20" : "transparent",
+                  },
+                ]}
+              >
+                <Text
+                  style={{
+                    color: qos === level ? colorTheme.tint : colorTheme.text,
+                    fontWeight: qos === level ? "600" : "400",
+                  }}
+                >
+                  QoS {level}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
 
         <TouchableOpacity
           style={[styles.publishBtn, { backgroundColor: colorTheme.tint }]}
@@ -112,6 +145,24 @@ const styles = StyleSheet.create({
   payloadInput: {
     minHeight: 100,
     textAlignVertical: "top",
+  },
+  qosInputContainer: {
+    marginTop: 12,
+  },
+  qosInputLabel: {
+    fontSize: 14,
+    marginBottom: 6,
+    fontWeight: "500",
+  },
+  qosInputOptions: {
+    flexDirection: "row",
+  },
+  qosInputOption: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginRight: 8,
   },
   publishBtn: {
     paddingVertical: 14,

@@ -21,7 +21,7 @@ export interface MqttContextProps {
   isConnected: boolean;
   connecting: (connectionConfig: ConnectionModel) => Promise<void>;
   disconnect: () => Promise<void>;
-  publish: (topic: string, payload: string) => Promise<void>;
+  publish: (topic: string, payload: string, qos: number) => Promise<void>;
   subscribe: (topic: string) => Promise<any>;
   unsubscribe: (topic: string) => Promise<void>;
   messages: Record<string, string>;
@@ -55,9 +55,12 @@ export function MqttProvider({
     setIsConnected(false);
   }, []);
 
-  const publish = useCallback(async (topic: string, payload: string) => {
-    await mqttPublish(topic, payload);
-  }, []);
+  const publish = useCallback(
+    async (topic: string, payload: string, qos: number) => {
+      await mqttPublish(topic, payload, qos);
+    },
+    []
+  );
 
   const subscribe = useCallback(async (topic: string) => {
     await mqttSubscribe(topic);

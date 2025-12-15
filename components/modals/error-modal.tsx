@@ -78,7 +78,7 @@ export function ErrorModal({ visible, message, onClose }: ErrorModalProps) {
                 fontSize: 15,
               }}
             >
-              Tutup
+              Close
             </Text>
           </TouchableOpacity>
         </View>
