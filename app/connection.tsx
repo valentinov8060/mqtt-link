@@ -1,5 +1,5 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -38,11 +38,16 @@ export default function ConnectionScreen() {
   const [showErrorModal, setShowErrorModal] = useState(false);
 
   // USE EFFECT
+  const hasInitialized = useRef(false);
   useEffect(() => {
     const fetchConnectionConfig = async () => {
-      const initialConnectionConfig = await getConnections();
-      setConnectionConfig(initialConnectionConfig[0]);
+      const connections = await getConnections();
+      if (!hasInitialized.current && connections.length > 0) {
+        setConnectionConfig(connections[0]);
+        hasInitialized.current = true;
+      }
     };
+
     fetchConnectionConfig();
   }, []);
 
@@ -80,7 +85,11 @@ export default function ConnectionScreen() {
           >
             Host:{" "}
             <Text style={[styles.baseText, { color: colorTheme.text }]}>
-              {connectionConfig.host || "Not Set"}
+              {connectionConfig.host !== null &&
+              connectionConfig.host !== undefined &&
+              connectionConfig.host !== ""
+                ? connectionConfig.host
+                : "Not Set"}
             </Text>
           </Text>
 

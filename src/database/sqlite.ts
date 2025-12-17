@@ -1,13 +1,8 @@
 import * as SQLite from "expo-sqlite";
 
-export async function getDB() {
-  try {
-    const db = await SQLite.openDatabaseAsync("mqtt-link");
-    return db;
-  } catch (error) {
-    console.error("getDB Error: ", error);
-    throw new Error("getDB Error:" + (error as any));
-  }
-}
+let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
-export default getDB;
+export default function getDB() {
+  dbPromise ??= SQLite.openDatabaseAsync("mqtt-link");
+  return dbPromise;
+}

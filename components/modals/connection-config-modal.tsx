@@ -51,9 +51,9 @@ export const ConnectionConfigModal: React.FC<ConnectionConfigModalProps> = ({
   const { connecting } = useMqtt();
 
   const [protocol, setProtocol] = useState(connectionConfig.protocol);
-  const [host, setHost] = useState(connectionConfig.host);
+  const [host, setHost] = useState(connectionConfig.host ?? "");
   const [port, setPort] = useState(connectionConfig.port);
-  const [tlsEnabled, setTlsEnabled] = useState(connectionConfig.tls);
+  const [tls, setTls] = useState(connectionConfig.tls);
   const [username, setUsername] = useState(connectionConfig.username || "");
   const [password, setPassword] = useState(connectionConfig.password || "");
   const [autoReconnect, setAutoReconnect] = useState(
@@ -71,7 +71,7 @@ export const ConnectionConfigModal: React.FC<ConnectionConfigModalProps> = ({
         protocol,
         host,
         port,
-        tls: tlsEnabled,
+        tls,
         username,
         password,
         autoReconnect,
@@ -100,7 +100,7 @@ export const ConnectionConfigModal: React.FC<ConnectionConfigModalProps> = ({
       setProtocol(connectionConfig.protocol);
       setHost(connectionConfig.host);
       setPort(connectionConfig.port);
-      setTlsEnabled(connectionConfig.tls);
+      setTls(connectionConfig.tls);
       setUsername(connectionConfig.username || "");
       setPassword(connectionConfig.password || "");
       setAutoReconnect(connectionConfig.autoReconnect);
@@ -228,8 +228,8 @@ export const ConnectionConfigModal: React.FC<ConnectionConfigModalProps> = ({
                     true: colorTheme.tabIconSelected,
                   }}
                   thumbColor={colorTheme.tint}
-                  onValueChange={setTlsEnabled}
-                  value={tlsEnabled}
+                  onValueChange={setTls}
+                  value={tls}
                 />
               </View>
 

@@ -80,10 +80,6 @@ export function MqttProvider({
         [topic]: payload,
       }));
     });
-
-    return () => {
-      disconnectMqtt();
-    };
   }, []);
 
   return (
