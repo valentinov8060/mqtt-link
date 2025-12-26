@@ -6,7 +6,6 @@ export interface ConnectionModel {
   tls: boolean;
   username?: string | null;
   password?: string | null;
-  autoReconnect: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }

@@ -12,7 +12,6 @@ import {
   View,
 } from "react-native";
 
-import { useMqtt } from "@/components/contexts/mqtt-context";
 import { ErrorModal } from "@/components/modals/error-modal";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -48,17 +47,12 @@ export const ConnectionConfigModal: React.FC<ConnectionConfigModalProps> = ({
     fontSize: 16,
   };
 
-  const { connecting } = useMqtt();
-
   const [protocol, setProtocol] = useState(connectionConfig.protocol);
   const [host, setHost] = useState(connectionConfig.host ?? "");
   const [port, setPort] = useState(connectionConfig.port);
   const [tls, setTls] = useState(connectionConfig.tls);
   const [username, setUsername] = useState(connectionConfig.username || "");
   const [password, setPassword] = useState(connectionConfig.password || "");
-  const [autoReconnect, setAutoReconnect] = useState(
-    connectionConfig.autoReconnect
-  );
 
   const [error, setError] = useState<string | null>(null);
   const [showErrorModal, setShowErrorModal] = useState(false);
@@ -74,15 +68,11 @@ export const ConnectionConfigModal: React.FC<ConnectionConfigModalProps> = ({
         tls,
         username,
         password,
-        autoReconnect,
       };
 
       await updateConnection(updatedData);
 
       setConnectionConfig(updatedData);
-      if (autoReconnect) {
-        await connecting(updatedData);
-      }
 
       onClose();
     } catch (error) {
@@ -103,7 +93,6 @@ export const ConnectionConfigModal: React.FC<ConnectionConfigModalProps> = ({
       setTls(connectionConfig.tls);
       setUsername(connectionConfig.username || "");
       setPassword(connectionConfig.password || "");
-      setAutoReconnect(connectionConfig.autoReconnect);
     }
   }, [isVisible, connectionConfig]);
 
@@ -259,20 +248,6 @@ export const ConnectionConfigModal: React.FC<ConnectionConfigModalProps> = ({
                   placeholder="••••••••"
                   secureTextEntry
                   placeholderTextColor={colorTheme.tabIconDefault}
-                />
-              </View>
-
-              {/* AUTO RECONNECT (TOGGLE) */}
-              <View style={styles.toggleRow}>
-                <ThemedText style={styles.label}>Auto Reconnect</ThemedText>
-                <Switch
-                  trackColor={{
-                    false: colorTheme.tabIconDefault,
-                    true: colorTheme.tabIconSelected,
-                  }}
-                  thumbColor={colorTheme.tint}
-                  onValueChange={setAutoReconnect}
-                  value={autoReconnect}
                 />
               </View>
 

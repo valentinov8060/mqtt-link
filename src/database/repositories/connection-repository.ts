@@ -6,13 +6,12 @@ export async function addConnection(
 ): Promise<null> {
   try {
     const tlsValue = connection.tls ? 1 : 0;
-    const autoReconnectValue = connection.autoReconnect ? 1 : 0;
 
     const sql = `
       INSERT INTO connections 
-        (protocol, host, port, tls, username, password, autoReconnect)
+        (protocol, host, port, tls, username, password)
       VALUES 
-        (?, ?, ?, ?, ?, ?, ?);
+        (?, ?, ?, ?, ?, ?);
     `;
     const params = [
       connection.protocol,
@@ -21,7 +20,6 @@ export async function addConnection(
       tlsValue,
       connection.username || null,
       connection.password || null,
-      autoReconnectValue,
     ];
 
     const db = await getDB();
@@ -47,7 +45,6 @@ export async function getConnections(): Promise<ConnectionModel[]> {
       return {
         ...rawConn,
         tls: !!rawConn.tls,
-        autoReconnect: !!rawConn.autoReconnect,
       } as ConnectionModel;
     });
 
@@ -69,7 +66,6 @@ export async function updateConnection(
     }
 
     const tlsValue = connection.tls ? 1 : 0;
-    const autoReconnectValue = connection.autoReconnect ? 1 : 0;
     const sql = `
       UPDATE connections 
       SET 
@@ -78,8 +74,7 @@ export async function updateConnection(
         port = ?,
         tls = ?,
         username = ?,
-        password = ?,
-        autoReconnect = ?
+        password = ?
       WHERE id = ?;
     `;
     const params = [
@@ -89,7 +84,6 @@ export async function updateConnection(
       tlsValue,
       connection.username || null,
       connection.password || null,
-      autoReconnectValue,
       idValue,
     ];
 

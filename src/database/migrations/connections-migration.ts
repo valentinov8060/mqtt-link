@@ -12,7 +12,6 @@ export async function initConnections() {
         tls INTEGER DEFAULT 0,
         username TEXT,
         password TEXT,
-        autoReconnect INTEGER DEFAULT 1,
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
         updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
       );

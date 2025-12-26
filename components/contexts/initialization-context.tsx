@@ -17,7 +17,6 @@ export const DEFAULT_CONNECTION_CONFIG: ConnectionModel = {
   tls: false,
   username: null,
   password: null,
-  autoReconnect: true,
 };
 
 const InitializationContext = createContext<undefined>(undefined);
@@ -39,16 +38,16 @@ export const InitializationProvider = ({
 
         if (connections.length === 0) {
           await addConnection(DEFAULT_CONNECTION_CONFIG);
-        } else if (connections[0].autoReconnect) {
-          await connecting(connections[0]);
         }
+
+        await connecting(connections[0]);
       } catch (err: any) {
         console.error("Init error:", err);
       }
     };
 
     init();
-  }, [connecting]);
+  }, []);
 
   return (
     <InitializationContext.Provider value={undefined}>

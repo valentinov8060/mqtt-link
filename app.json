@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "mqtt-link",
-    "slug": "mqtt-link",
+    "name": "MQTT Link",
+    "slug": "MQTT-Link",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/mqtt-link-icon.png",
